@@ -8,6 +8,7 @@
 import Foundation
 import AppKit
 import SwiftUI
+import UniformTypeIdentifiers
 
 // スクリーンショットの保存先
 enum SaveDestination {
@@ -196,11 +197,10 @@ class ImageSaver: NSObject {
     
     // 履歴に追加
     private func addToHistory(image: NSImage, url: URL) {
-        let screenshotModel = ScreenshotModel(image: image)
+        var screenshotModel = ScreenshotModel(image: image)
         screenshotModel.path = url
         ScreenshotHistory.shared.addScreenshot(screenshotModel)
     }
-}
 
 // NSUserNotificationCenterデリゲート（通知の処理用）
 class NotificationDelegate: NSObject, NSUserNotificationCenterDelegate {

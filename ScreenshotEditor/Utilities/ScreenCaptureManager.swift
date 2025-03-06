@@ -19,7 +19,6 @@ class ScreenCaptureManager: NSObject {
     static let shared = ScreenCaptureManager()
     
     private var availableContent: SCShareableContent?
-    private var captureSession: SCStreamSession?
     private var stream: SCStream?
     private var streamOutput: CaptureSessionOutput?
     private var selectedDisplayID: CGDirectDisplayID?
@@ -43,15 +42,13 @@ class ScreenCaptureManager: NSObject {
     func checkPermission(completion: @escaping (Bool) -> Void) {
         Task {
             do {
-                let authorizationStatus = await SCShareableContent.checkAuthorization(options: [])
-                switch authorizationStatus {
-                case .authorized:
-                    permissionGranted = true
-                    completion(true)
-                default:
-                    permissionGranted = false
-                    completion(false)
-                }
+                // In Swift 6, we directly try to get content to check permission
+                let _ = try await SCShareableContent.current
+                permissionGranted = true
+                completion(true)
+            } catch {
+                permissionGranted = false
+                completion(false)
             }
         }
     }
@@ -93,7 +90,7 @@ class ScreenCaptureManager: NSObject {
             configuration.showsCursor = false
             
             // アプリ自体をキャプチャから除外
-            if let runningApps = availableContent.applications {
+            if let runningApps = availableContent.applications as? [SCRunningApplication] {
                 let appBundleID = Bundle.main.bundleIdentifier ?? ""
                 let currentApp = runningApps.first(where: { $0.bundleIdentifier == appBundleID })
                 
@@ -124,7 +121,6 @@ class ScreenCaptureManager: NSObject {
             
             // キャプチャ開始
             try stream.addStreamOutput(streamOutput, type: .screen, sampleHandlerQueue: DispatchQueue.global(qos: .userInitiated))
-            captureSession = SCStreamSession()
             try stream.startCapture()
             
         } catch {
@@ -175,7 +171,7 @@ class ScreenCaptureManager: NSObject {
             configuration.showsCursor = false
             
             // アプリ自体をキャプチャから除外
-            if let runningApps = availableContent.applications {
+            if let runningApps = availableContent.applications as? [SCRunningApplication] {
                 let appBundleID = Bundle.main.bundleIdentifier ?? ""
                 let currentApp = runningApps.first(where: { $0.bundleIdentifier == appBundleID })
                 
@@ -214,7 +210,6 @@ class ScreenCaptureManager: NSObject {
             
             // キャプチャ開始
             try stream.addStreamOutput(streamOutput, type: .screen, sampleHandlerQueue: DispatchQueue.global(qos: .userInitiated))
-            captureSession = SCStreamSession()
             try stream.startCapture()
             
         } catch {
@@ -247,7 +242,6 @@ class ScreenCaptureManager: NSObject {
     func stopCapture() {
         stream?.stopCapture()
         stream = nil
-        captureSession = nil
         streamOutput = nil
     }
 }
